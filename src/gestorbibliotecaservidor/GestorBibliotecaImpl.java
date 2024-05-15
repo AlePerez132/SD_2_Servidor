@@ -5,13 +5,22 @@
 package gestorbibliotecaservidor;
 
 import gestorbibliotecacomun.*;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Random;
 
 /**
  *
  * @author alepd
  */
 public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
+
+    private int nRepo = 0;
+    private int idAdmin = -1;
+    ArrayList<Repositorio> repositorios = new ArrayList<>();
 
     /*Se encarga de verificar la contraseña de administrador y devolverá un número (IDA) dependiendo de las
     siguientes condiciones:
@@ -21,21 +30,40 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     Este número deberá ser utilizado en todas las operaciones de Administración en el campo Ida. */
     @Override
     public int Conexion(String pPasswd) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (idAdmin != -1) {
+            return -1;
+        } else {
+            if (pPasswd != "1234") {
+                return -2;
+            } else {
+                Random r = new Random(System.nanoTime());
+                idAdmin = r.nextInt(1000000) + 1;
+                return idAdmin;
+            }
+        }
     }
 
     /*Comprueba que el Ida coincide con el almacenado en el servidor. Si no coincide devuelve false y caso
     contrario borra el Ida (lo pone a -1) almacenado en el servidor y devuelve true. */
     @Override
     public boolean Desconexion(int pIda) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return false;
+        } else {
+            idAdmin = -1;
+            return true;
+        }
     }
 
     /*Devuelve el número de repositorios almacenados en la biblioteca. En caso de que exista otro usuario
     identificado como administrador devolverá -1. */
     @Override
     public int NRepositorios(int pIda) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return -1;
+        } else {
+            return nRepo;
+        }
     }
 
     /*Devolverá los datos del repositorio cargado en la posición que indica el parámetro pRepo. La clase
@@ -47,7 +75,15 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     ¡null: La referencia a un objeto TDatosRepositorio con los datos del repositorio. */
     @Override
     public TDatosRepositorio DatosRepositorio(int pIda, int pPosRepo) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return null;
+        } else {
+            if (pPosRepo <= 0 || pPosRepo >= repositorios.size()) { //asumo que el dato que se pasa va desde 1 hasta n
+                return null;
+            } else {
+                return repositorios.get(pPosRepo - 1).getDatos(); //por eso le pongo el -1
+            }
+        }
     }
 
     /*Carga en memoria el repositorio cuyo nombre de fichero es pasado por parámetro. Las salidas del servicio
@@ -59,10 +95,103 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     1: El fichero ha sido cargado y ha sido ordenado por el campo correspondiente. */
     @Override
     public int AbrirRepositorio(int pIda, String pNomFichero) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return -1;
+        } else {
+            try ( DataInputStream dis = new DataInputStream(new FileInputStream(pNomFichero))) {
+
+                // Lee datos Repositorio
+                int numLibros = dis.readInt();
+                String nombreRepositorio = dis.readUTF();
+                String direccionRepositorio = dis.readUTF();
+
+                int j = 0;
+                while (j < repositorios.size()) {
+                    if (repositorios.get(j).getDatos().getNombre().equals(nombreRepositorio)) {
+                        return -2;
+                    } else {
+                        j++;
+                    }
+                }
+                //no hay ningun repositorio con el mismo nombre, procedemos a guardar los libros
+                ArrayList<TLibro> libros = new ArrayList<>();
+                for (int i = 0; numLibros >= i; i++) {
+                    String isbn = dis.readUTF();
+                    String titulo = dis.readUTF();
+                    String autor = dis.readUTF();
+                    int anio = dis.readInt();
+                    String pais = dis.readUTF();
+                    String idioma = dis.readUTF();
+                    int noLibros = dis.readInt();
+                    int noPrestados = dis.readInt();
+                    int noListaEspera = dis.readInt();
+
+                    //crear objeto TLibro y añadirlo a la lista
+                    TLibro libro = new TLibro(isbn, titulo, autor, anio, pais, idioma, noLibros, noPrestados, noListaEspera);
+                    libros.add(libro);
+                }
+                
+                //tenemos todo el dato de los repositorios, solo falta crearlo y anadirlo
+                TDatosRepositorio datos = new TDatosRepositorio(nombreRepositorio, direccionRepositorio, numLibros);
+                Repositorio repositorio = new Repositorio(libros, datos);
+                repositorios.add(repositorio);
+                return 1;
+            } catch (IOException e) {
+                return 0; //si el fichero no se ha abierto correctamente
+            }
+        }
     }
 
-    /*Guarda a fichero correspondiente, el repositorio cargado en la biblioteca en la posición que indica
+    /*
+    CODIGO DE CLAUDIO
+    FileInputStream file = new FileInputStream("Biblioteca.jdatR" + (nrepo) + "");
+
+        for (int i = 0; i < L_Libros.size(); i++) {
+            System.out.println("probando impresiones");
+        }
+
+        try ( DataInputStream dis = new DataInputStream(file)) {
+
+            // Lee datos Repositorio
+            int numLibros = dis.readInt();
+            String nombreRepositorio = dis.readUTF();
+            String direccionRepositorio = dis.readUTF();
+
+            TDatosRepositorio Repo = new TDatosRepositorio(numLibros, nombreRepositorio, direccionRepositorio);
+            Repo.Caracteristicas();
+
+            System.out.println("**");
+
+            // Lee los títulos de los libros
+            for (int i = 0; i < numLibros; i++) {
+                String Isbn = dis.readUTF();
+                String Titulo = dis.readUTF();
+                String Autor = dis.readUTF();
+                int Anno = dis.readInt();
+                String Pais = dis.readUTF();
+                String Idioma = dis.readUTF();
+                int NoLibros = dis.readInt();
+                int NoPrestados = dis.readInt();
+                int NoListaEspera = dis.readInt();
+
+                Libro L = new Libro(Isbn, Titulo, Autor, Anno, Pais, Idioma, NoLibros, NoPrestados, NoListaEspera);
+                L_Libros.add(L);
+                //L.Caracteristicas();
+
+            }
+            System.out.println("***Numero de elementos" + L_Libros.size());
+            //L_Libros.get(L_Libros.size()-1).Caracteristicas();
+
+            for (int i = 0; i < L_Libros.size(); i++) {
+                L_Libros.get(i).Caracteristicas();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+     */
+    
+ /*Guarda a fichero correspondiente, el repositorio cargado en la biblioteca en la posición que indica
     pRepo. Esta posición se ha de pedir al usuario y en caso de ser -1 se guardarán todos los repositorios
     cargados en la biblioteca en su fichero correspondiente. Las salidas del servicio son:
     -1: Ya hay un usuario identificado como administrador o el Ida no coincide con el almacenado en el
@@ -84,7 +213,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     0: Hay un libro en algún repositorio de la biblioteca que tiene el mismo Isbn.
     1: Se ha añadido el nuevo libro al repositorio indicado por pRepo. */
     @Override
-    public int NuevoLibro(int pIda, TLibro L, int pRepo) throws RemoteException {
+    public int NuevoLibro(int pIda, TLibro L,
+            int pRepo) throws RemoteException {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
@@ -100,7 +230,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     0: No se ha encontrado ningún Libro con el Isbn indicado por parámetro.
     1: Se han agregado los nuevos ejemplares del libro y los datos están ordenados. */
     @Override
-    public int Comprar(int pIda, String pIsbn, int pNoLibros) throws RemoteException {
+    public int Comprar(int pIda, String pIsbn,
+            int pNoLibros) throws RemoteException {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
@@ -114,7 +245,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     1: Se han reducido el número de ejemplares disponibles y se han ordenado los datos.
     2: No hay suficientes ejemplares disponibles para ser retirados. */
     @Override
-    public int Retirar(int pIda, String pIsbn, int pNoLibros) throws RemoteException {
+    public int Retirar(int pIda, String pIsbn,
+            int pNoLibros) throws RemoteException {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
