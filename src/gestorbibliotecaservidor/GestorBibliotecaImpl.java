@@ -142,8 +142,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return -1;
         } else {
-            try ( DataInputStream dis = new DataInputStream(new FileInputStream("Biblioteca.jdat_R" + pNomFichero + "_"))) {
-                nombreFichero = "Biblioteca.jdat_R" + pNomFichero + "_";
+            try ( DataInputStream dis = new DataInputStream(new FileInputStream(pNomFichero))) {
+                nombreFichero = pNomFichero;
                 // Lee datos Repositorio
                 int numLibros = dis.readInt();
                 String nombreRepositorio = dis.readUTF();
