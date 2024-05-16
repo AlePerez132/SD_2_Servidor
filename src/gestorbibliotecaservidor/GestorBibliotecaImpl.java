@@ -6,7 +6,9 @@ package gestorbibliotecaservidor;
 
 import gestorbibliotecacomun.*;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     private ArrayList<Repositorio> repositorios = new ArrayList<>();
     private int campoOrdenacion = 0;
     private ArrayList<TLibro> Libros = new ArrayList<>(); //mezcla ordenada?
+    private String nombreFichero = "";
     private final Comparator<TLibro> c = new Comparator<>() {
         @Override
         public int compare(TLibro o1, TLibro o2) {
@@ -74,7 +77,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (idAdmin != -1) {
             return -1;
         } else {
-            if (pPasswd != "1234") {
+            if (!pPasswd.equals("1234")) {
                 return -2;
             } else {
                 Random r = new Random(System.nanoTime());
@@ -119,7 +122,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return null;
         } else {
-            if (pPosRepo <= 0 || pPosRepo >= repositorios.size()) { //asumo que el dato que se pasa va desde 1 hasta n
+            if (pPosRepo < 1 || pPosRepo >= repositorios.size()) { //asumo que el dato que se pasa va desde 1 hasta n
                 return null;
             } else {
                 return repositorios.get(pPosRepo - 1).getDatos(); //por eso le pongo el -1
@@ -139,8 +142,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return -1;
         } else {
-            try ( DataInputStream dis = new DataInputStream(new FileInputStream("Biblioteca.jdat_R" + (pNomFichero) + "_"))) {
-
+            try ( DataInputStream dis = new DataInputStream(new FileInputStream("Biblioteca.jdat_R" + pNomFichero + "_"))) {
+                nombreFichero = "Biblioteca.jdat_R" + pNomFichero + "_";
                 // Lee datos Repositorio
                 int numLibros = dis.readInt();
                 String nombreRepositorio = dis.readUTF();
@@ -197,9 +200,59 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     public int GuardarRepositorio(int pIda, int pRepo) throws RemoteException {
         if (pIda != idAdmin) {
             return -1;
-        } else {
+        } else if (nombreFichero.equals("")) {
             return 0;
+        } else if (pRepo == -1) {
+            for (Repositorio repo : repositorios) {
+                try ( DataOutputStream output = new DataOutputStream(new FileOutputStream(nombreFichero))) {
+                    output.writeInt(repo.getDatos().getNumLibros());
+                    output.writeUTF(repo.getDatos().getNombre());
+                    output.writeUTF(repo.getDatos().getDireccion());
+
+                    for (TLibro libro : repo.getLibros()) {
+                        output.writeUTF(libro.getIsbn());
+                        output.writeUTF(libro.getTitulo());
+                        output.writeUTF(libro.getAutor());
+                        output.writeInt(libro.getAnio());
+                        output.writeUTF(libro.getPais());
+                        output.writeUTF(libro.getIdioma());
+                        output.writeInt(libro.getNoLibros());
+                        output.writeInt(libro.getNoPrestados());
+                        output.writeInt(libro.getNoListaEspera());
+                    }
+                    return 1;
+                } catch (IOException e) {
+                    return 0;
+                }
+            }
+        } else if (pRepo < 1 || pRepo > repositorios.size()) {
+            return -2;
+        } else {
+            Repositorio repo = repositorios.get(pRepo - 1);
+            try ( DataOutputStream output = new DataOutputStream(new FileOutputStream(nombreFichero))) {
+                output.writeInt(repo.getDatos().getNumLibros());
+                output.writeUTF(repo.getDatos().getNombre());
+                output.writeUTF(repo.getDatos().getDireccion());
+
+                for (TLibro libro : repo.getLibros()) {
+                    output.writeUTF(libro.getIsbn());
+                    output.writeUTF(libro.getTitulo());
+                    output.writeUTF(libro.getAutor());
+                    output.writeInt(libro.getAnio());
+                    output.writeUTF(libro.getPais());
+                    output.writeUTF(libro.getIdioma());
+                    output.writeInt(libro.getNoLibros());
+                    output.writeInt(libro.getNoPrestados());
+                    output.writeInt(libro.getNoListaEspera());
+                }
+                return 1;
+            } catch (IOException e) {
+                return 0;
+            }
         }
+        return -2;
+        //EL UNICO CASO EN EL QUE SE PUEDE METER AQUI ES SI EN LA LINEA for (Repositorio repo : repositorios) { LA LISTA DE
+        //REPOSITORIOS ESTA VACIA, POR ESO LE DIGO QUE LA POSICION DEL REPOSITORIO ES ERRONEA
     }
 
     /*Guarda el libro L pasado al servicio en el repositorio indicada por pRepo que no podrá ser -1. Una vez
@@ -219,13 +272,13 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         } else {
             int i = 0;
             while (i < Libros.size()) {
-                if (repositorios.get(pRepo).getLibros().get(i).getIsbn().equals(L.getIsbn())) {
-                    return 0; 
+                if (repositorios.get(pRepo - 1).getLibros().get(i).getIsbn().equals(L.getIsbn())) {
+                    return 0;
                 } else {
                     i++;
                 }
             }
-            repositorios.get(pRepo).getLibros().add(L);
+            repositorios.get(pRepo - 1).getLibros().add(L);
             return 1;
         }
     }
@@ -371,7 +424,16 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     0: Se ha puesto el usuario en la lista de espera. */
     @Override
     public int Prestar(int pPos) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if(pPos < 1 || pPos > Libros.size()){
+            return -1;
+        } else if(Libros.get(pPos).getNoLibros() <= 0){
+            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera()+1);
+            return 0;
+        } else {
+            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros()-1);
+            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados()-1);
+            return 1;
+        }
     }
 
     /*Presta a un usuario de la biblioteca un libro cuya posición es indicada por parámetro. Este método
