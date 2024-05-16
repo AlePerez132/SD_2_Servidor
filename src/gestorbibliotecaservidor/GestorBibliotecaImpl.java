@@ -10,17 +10,58 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Random;
 
 /**
  *
  * @author alepd
  */
+//IMPORTANTE: SE CONSIDERA QUE CUANDO SE PASA LA POSICION DE UN REPOSITORIO POR PARAMETRO, SE PASARA UN NUMERO DE 1 A N,
+//POR TANTO, DEBEMOS RESTARLE 1 EN EL SERVIDOR PARA CONVERTIRLO EN UN RANGO DE 0 A N-1
 public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
 
     private int nRepo = 0;
     private int idAdmin = -1;
-    ArrayList<Repositorio> repositorios = new ArrayList<>();
+    private ArrayList<Repositorio> repositorios = new ArrayList<>();
+    private int campoOrdenacion = 0;
+    private ArrayList<TLibro> Libros = new ArrayList<>(); //mezcla ordenada?
+    private final Comparator<TLibro> c = new Comparator<>() {
+        @Override
+        public int compare(TLibro o1, TLibro o2) {
+            int C = 0;
+            switch (campoOrdenacion) {
+                case 0:
+                    C = o1.getIsbn().compareTo(o2.getIsbn());
+                    break;
+                case 1:
+                    C = o1.getTitulo().compareTo(o2.getTitulo());
+                    break;
+                case 2:
+                    C = o1.getAutor().compareTo(o2.getAutor());
+                    break;
+                case 3:
+                    C = Integer.compare(o1.getAnio(), o2.getAnio());
+                    break;
+                case 4:
+                    C = o1.getPais().compareTo(o2.getPais());
+                    break;
+                case 5:
+                    C = o1.getPais().compareTo(o2.getPais());
+                    break;
+                case 6:
+                    C = Integer.compare(o1.getNoLibros(), o2.getNoLibros());
+                    break;
+                case 7:
+                    C = Integer.compare(o1.getNoPrestados(), o2.getNoPrestados());
+                    break;
+                case 8:
+                    C = Integer.compare(o1.getNoListaEspera(), o2.getNoListaEspera());
+                    break;
+            }
+            return C;
+        }
+    };
 
     /*Se encarga de verificar la contraseña de administrador y devolverá un número (IDA) dependiendo de las
     siguientes condiciones:
@@ -98,7 +139,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return -1;
         } else {
-            try ( DataInputStream dis = new DataInputStream(new FileInputStream(pNomFichero))) {
+            try ( DataInputStream dis = new DataInputStream(new FileInputStream("Biblioteca.jdat_R" + (pNomFichero) + "_"))) {
 
                 // Lee datos Repositorio
                 int numLibros = dis.readInt();
@@ -128,13 +169,15 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
 
                     //crear objeto TLibro y añadirlo a la lista
                     TLibro libro = new TLibro(isbn, titulo, autor, anio, pais, idioma, noLibros, noPrestados, noListaEspera);
-                    libros.add(libro);
+                    libros.add(libro); //array auxiliar para meterlo en el repositorio
+                    Libros.add(libro); //array que contiene todos los libros de todos los repositorios;
                 }
-                
+
                 //tenemos todo el dato de los repositorios, solo falta crearlo y anadirlo
                 TDatosRepositorio datos = new TDatosRepositorio(nombreRepositorio, direccionRepositorio, numLibros);
                 Repositorio repositorio = new Repositorio(libros, datos);
                 repositorios.add(repositorio);
+                Ordenar(pIda, campoOrdenacion);
                 return 1;
             } catch (IOException e) {
                 return 0; //si el fichero no se ha abierto correctamente
@@ -142,56 +185,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         }
     }
 
-    /*
-    CODIGO DE CLAUDIO
-    FileInputStream file = new FileInputStream("Biblioteca.jdatR" + (nrepo) + "");
-
-        for (int i = 0; i < L_Libros.size(); i++) {
-            System.out.println("probando impresiones");
-        }
-
-        try ( DataInputStream dis = new DataInputStream(file)) {
-
-            // Lee datos Repositorio
-            int numLibros = dis.readInt();
-            String nombreRepositorio = dis.readUTF();
-            String direccionRepositorio = dis.readUTF();
-
-            TDatosRepositorio Repo = new TDatosRepositorio(numLibros, nombreRepositorio, direccionRepositorio);
-            Repo.Caracteristicas();
-
-            System.out.println("**");
-
-            // Lee los títulos de los libros
-            for (int i = 0; i < numLibros; i++) {
-                String Isbn = dis.readUTF();
-                String Titulo = dis.readUTF();
-                String Autor = dis.readUTF();
-                int Anno = dis.readInt();
-                String Pais = dis.readUTF();
-                String Idioma = dis.readUTF();
-                int NoLibros = dis.readInt();
-                int NoPrestados = dis.readInt();
-                int NoListaEspera = dis.readInt();
-
-                Libro L = new Libro(Isbn, Titulo, Autor, Anno, Pais, Idioma, NoLibros, NoPrestados, NoListaEspera);
-                L_Libros.add(L);
-                //L.Caracteristicas();
-
-            }
-            System.out.println("***Numero de elementos" + L_Libros.size());
-            //L_Libros.get(L_Libros.size()-1).Caracteristicas();
-
-            for (int i = 0; i < L_Libros.size(); i++) {
-                L_Libros.get(i).Caracteristicas();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-     */
-    
- /*Guarda a fichero correspondiente, el repositorio cargado en la biblioteca en la posición que indica
+    /*Guarda a fichero correspondiente, el repositorio cargado en la biblioteca en la posición que indica
     pRepo. Esta posición se ha de pedir al usuario y en caso de ser -1 se guardarán todos los repositorios
     cargados en la biblioteca en su fichero correspondiente. Las salidas del servicio son:
     -1: Ya hay un usuario identificado como administrador o el Ida no coincide con el almacenado en el
@@ -201,7 +195,11 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     1: El/los repositorios han sido guardados a sus ficheros correspondientes. */
     @Override
     public int GuardarRepositorio(int pIda, int pRepo) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return -1;
+        } else {
+            return 0;
+        }
     }
 
     /*Guarda el libro L pasado al servicio en el repositorio indicada por pRepo que no podrá ser -1. Una vez
@@ -213,9 +211,23 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     0: Hay un libro en algún repositorio de la biblioteca que tiene el mismo Isbn.
     1: Se ha añadido el nuevo libro al repositorio indicado por pRepo. */
     @Override
-    public int NuevoLibro(int pIda, TLibro L,
-            int pRepo) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public int NuevoLibro(int pIda, TLibro L, int pRepo) throws RemoteException {
+        if (pIda != idAdmin) {
+            return -1;
+        } else if (pRepo < 1 || pRepo > repositorios.size()) {
+            return -2;
+        } else {
+            int i = 0;
+            while (i < Libros.size()) {
+                if (repositorios.get(pRepo).getLibros().get(i).getIsbn().equals(L.getIsbn())) {
+                    return 0; 
+                } else {
+                    i++;
+                }
+            }
+            repositorios.get(pRepo).getLibros().add(L);
+            return 1;
+        }
     }
 
     /*Añadirá un número de ejemplares al libro cuyo Isbn coincida con el pasado por parámetro. Para ello
@@ -230,9 +242,12 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     0: No se ha encontrado ningún Libro con el Isbn indicado por parámetro.
     1: Se han agregado los nuevos ejemplares del libro y los datos están ordenados. */
     @Override
-    public int Comprar(int pIda, String pIsbn,
-            int pNoLibros) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public int Comprar(int pIda, String pIsbn, int pNoLibros) throws RemoteException {
+        if (pIda != idAdmin) {
+            return -1;
+        } else {
+            return 0;
+        }
     }
 
     /*Eliminará un número de ejemplares al libro cuyo Isbn pasado por parámetro. Para ello buscará el Isbn en
@@ -245,9 +260,12 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     1: Se han reducido el número de ejemplares disponibles y se han ordenado los datos.
     2: No hay suficientes ejemplares disponibles para ser retirados. */
     @Override
-    public int Retirar(int pIda, String pIsbn,
-            int pNoLibros) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public int Retirar(int pIda, String pIsbn, int pNoLibros) throws RemoteException {
+        if (pIda != idAdmin) {
+            return -1;
+        } else {
+            return 0;
+        }
     }
 
     /*Realizará una ordenación de los libros almacenados en todos los repositorios almacenados en la
@@ -258,7 +276,15 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     true: Se ha Ordenado correctamente los repositorios. */
     @Override
     public boolean Ordenar(int pIda, int pCampo) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return false;
+        } else {
+            Libros.sort(c);
+            for (Repositorio repo : repositorios) {
+                repo.getLibros().sort(c);
+            }
+            return true;
+        }
     }
 
     /*Devuelve siempre el número de libros del repositorio indicado por parámetro pRepo. Si pRepo es -1
@@ -268,7 +294,19 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     >=0: El número de l*/
     @Override
     public int NLibros(int pRepo) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pRepo == -1) {
+            int numLibrosTotal = 0;
+            for (Repositorio repo : repositorios) {
+                numLibrosTotal += repo.getDatos().getNumLibros();
+            }
+            return numLibrosTotal;
+        } else {
+            if (pRepo > repositorios.size()) {
+                return -1;
+            } else {
+                return repositorios.get(pRepo - 1).getDatos().getNumLibros(); //asumimos que el parametro va de 1 a N
+            }
+        }
     }
 
     /*Devuelve la posición del Libro cuya Isbn coincide con el pasado por parámetro. Las salidas de este
@@ -280,7 +318,19 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
      repositorios almacenados en la biblioteca. */
     @Override
     public int Buscar(int pIda, String pIsbn) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pIda != idAdmin) {
+            return -2;
+        } else {
+            int i = 0;
+            while (i < Libros.size()) {
+                if (Libros.get(i).getIsbn().equals(pIsbn)) {
+                    return i; //se devuelven en un rango de 0 a N-1
+                } else {
+                    i++;
+                }
+            }
+            return -1;
+        }
     }
 
     /*Devuelve el libro que está en la posición pPos del repositorio está en la posición pRepo. En caso de que
@@ -292,7 +342,22 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     ¡null: La referencia a un objeto TLibro. */
     @Override
     public TLibro Descargar(int pIda, int pRepo, int pPos) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pRepo < -1) {
+            if (pPos < 1 || pPos > Libros.size()) {
+                return null;
+            } else {
+                return Libros.get(pPos - 1);
+            }
+        } else if (pRepo < 1 || pRepo > repositorios.size()) {
+            return null;
+        } else {
+            Repositorio repo = repositorios.get(pRepo - 1);
+            if (pPos < 1 || pPos > repo.getLibros().size()) {
+                return null;
+            } else {
+                return repo.getLibros().get(pPos - 1);
+            }
+        }
     }
 
     /*Presta a un usuario de la biblioteca un libro cuya posición es indicada por parámetro. Este método
