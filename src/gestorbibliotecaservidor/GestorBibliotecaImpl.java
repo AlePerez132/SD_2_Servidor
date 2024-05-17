@@ -156,7 +156,6 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
                         j++;
                     }
                 }
-                System.out.println("Hemos comprobado que no hay ninguno con el mismo nombre");
                 //no hay ningun repositorio con el mismo nombre, procedemos a guardar los libros
                 ArrayList<TLibro> libros = new ArrayList<>();
                 for (int i = 0; i < numLibros; i++) {
@@ -181,7 +180,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
                 Repositorio repositorio = new Repositorio(libros, datos);
                 repositorios.add(repositorio);
                 nRepo++;
-                Ordenar(pIda, campoOrdenacion);
+                Ordenar(idAdmin, campoOrdenacion);
                 return 1;
             } catch (IOException e) {
                 return 0; //si el fichero no se ha abierto correctamente
@@ -281,6 +280,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
                 }
             }
             repositorios.get(pRepo - 1).getLibros().add(L);
+            Ordenar(idAdmin, campoOrdenacion);
             return 1;
         }
     }
@@ -301,7 +301,26 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return -1;
         } else {
-            return 0;
+            int i = 0;
+            boolean encontrado = false;
+            while (!encontrado || i < Libros.size()) {
+                if (Libros.get(pNoLibros).getIsbn().equals(pIsbn)) {
+                    encontrado = true;
+                } else {
+                    i++;
+                }
+            }
+            if (!encontrado) {
+                return 0;
+            } else {
+                while (pNoLibros > 0 && Libros.get(i).getNoListaEspera() > 0) {
+                    Libros.get(i).setNoListaEspera(Libros.get(i).getNoListaEspera() - 1); //Libros.get(i).NoListaEspera--
+                    pNoLibros--;
+                }
+                Libros.get(i).setNoLibros(Libros.get(i).getNoLibros() + pNoLibros); //Libros.get(i).NoLibros += librosComprados
+                Ordenar(idAdmin, campoOrdenacion);
+                return 1;
+            }
         }
     }
 
@@ -319,7 +338,26 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return -1;
         } else {
-            return 0;
+            int i = 0;
+            boolean encontrado = false;
+            while (!encontrado || i < Libros.size()) {
+                if (Libros.get(pNoLibros).getIsbn().equals(pIsbn)) {
+                    encontrado = true;
+                } else {
+                    i++;
+                }
+            }
+            if (!encontrado) {
+                return 0;
+            } else {
+                if(pNoLibros > Libros.get(i).getNoLibros()){
+                    return -2;
+                } else {
+                    Libros.get(i).setNoLibros(Libros.get(i).getNoLibros() - pNoLibros); //Libros.get(i).NoLibros-=pNoLibros
+                    Ordenar(idAdmin, campoOrdenacion);
+                    return 1;
+                }
+            }
         }
     }
 
@@ -334,6 +372,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return false;
         } else {
+            campoOrdenacion = pCampo;
             Libros.sort(c);
             for (Repositorio repo : repositorios) {
                 repo.getLibros().sort(c);
@@ -403,7 +442,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
             } else {
                 return Libros.get(pPos - 1);
             }
-        } else if (pRepo < 1 || pRepo > repositorios.size()) {
+        } else if (pRepo < 1 || pRepo > nRepo) {
             return null;
         } else {
             Repositorio repo = repositorios.get(pRepo - 1);
@@ -428,28 +467,46 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     public int Prestar(int pPos) throws RemoteException {
         if (pPos < 1 || pPos > Libros.size()) {
             return -1;
-        } else if (Libros.get(pPos).getNoLibros() <= 0) {
-            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() + 1);
+        } else if (Libros.get(pPos).getNoLibros() <= 0) { //si no hay libros disponibles
+            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() + 1); //Libros.get(i).NoListaEspera++
             return 0;
         } else {
-            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() - 1);
-            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() - 1);
+            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() - 1);  //Libros.get(i).NoListaEspera--
+            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() + 1); //Libros.get(i).NoPrestados++
+            Ordenar(idAdmin, campoOrdenacion);
             return 1;
         }
     }
 
-    /*Presta a un usuario de la biblioteca un libro cuya posición es indicada por parámetro. Este método
-    accede a los libros como si solo hubiera una “mezcla ordenada” de todos los repositorios. Una vez
-    localizado el libro, si hay ejemplares disponibles se reducirán en una unidad y los prestados aumentarán
-    en una unidad. Si no hubiera ejemplares disponibles se aumentará el número de usuarios en la lista de
-    espera. Una vez actualizado el libro se ordenará nuevamente el repositorio que contiene el libro por el
-    campo de ordenación almacenado en el servidor. Las salidas de este servicio son:
+    
+    
+    /*Devuelve un ejemplar del libro cuya posición es indicada por parámetro. Este método accede a los libros
+    como si solo hubiera una “mezcla ordenada” de todos los repositorios. Una vez localizado el libro, si hay
+    usuarios en espera se reducirá en una unidad y Si no hay usuarios en espera pero si libros prestados, se
+    reducirá el número de libros prestados y se aumentará el número de libros disponibles. Una vez actualizado
+    el libro se ordenará nuevamente el repositorio que contiene el libro por el campo de ordenación almacenado
+    en el servidor. Las salidas de este servicio son
     -1: La posición indicada no está dentro de los límites del repositorio mezclado y ordenado.
-    1: Se ha prestado el libro el libro correctamente.
-    0: Se ha puesto el usuario en la lista de espera. */
+    0: Se ha devuelto el libro reduciendo el número de usuarios en espera.
+    1: Se ha devuelto aumentando el número de libros disponibles.
+    2: El libro no se puede devolver, porque no hay ni usuarios en lista de espera ni libros
+     prestados. */
     @Override
     public int Devolver(int pPos) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (pPos < 1 || pPos > Libros.size()) {
+            return -1;
+        } else if (Libros.get(pPos).getNoListaEspera() > 0) { //si hay libros disponibles
+            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() - 1); //Libros.get(i).NoLibros++
+            Ordenar(idAdmin, campoOrdenacion);
+            return 0;
+        } else if(Libros.get(pPos).getNoPrestados() > 0){
+            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() + 1);  //Libros.get(i).NoListaEspera+
+            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() - 1); //Libros.get(i).NoPrestados--
+            Ordenar(idAdmin, campoOrdenacion);
+            return 1;
+        } else {
+            return 2;
+        }
     }
 
 }
