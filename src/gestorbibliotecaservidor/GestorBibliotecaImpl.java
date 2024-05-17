@@ -180,6 +180,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
                 TDatosRepositorio datos = new TDatosRepositorio(nombreRepositorio, direccionRepositorio, numLibros);
                 Repositorio repositorio = new Repositorio(libros, datos);
                 repositorios.add(repositorio);
+                nRepo++;
                 Ordenar(pIda, campoOrdenacion);
                 return 1;
             } catch (IOException e) {
