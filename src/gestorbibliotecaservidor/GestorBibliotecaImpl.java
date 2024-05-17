@@ -25,9 +25,9 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
 
     private int nRepo = 0;
     private int idAdmin = -1;
-    private ArrayList<Repositorio> repositorios = new ArrayList<>();
     private int campoOrdenacion = 0;
-    private ArrayList<TLibro> Libros = new ArrayList<>(); //mezcla ordenada?
+    private ArrayList<Repositorio> repositorios = new ArrayList<>();
+    private ArrayList<TLibro> Libros = new ArrayList<>();
     private String nombreFichero = "";
     private final Comparator<TLibro> c = new Comparator<>() {
         @Override
@@ -144,7 +144,6 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         } else {
             try ( DataInputStream dis = new DataInputStream(new FileInputStream(pNomFichero))) {
                 nombreFichero = pNomFichero;
-                // Lee datos Repositorio
                 int numLibros = dis.readInt();
                 String nombreRepositorio = dis.readUTF();
                 String direccionRepositorio = dis.readUTF();
@@ -157,9 +156,10 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
                         j++;
                     }
                 }
+                System.out.println("Hemos comprobado que no hay ninguno con el mismo nombre");
                 //no hay ningun repositorio con el mismo nombre, procedemos a guardar los libros
                 ArrayList<TLibro> libros = new ArrayList<>();
-                for (int i = 0; numLibros >= i; i++) {
+                for (int i = 0; i < numLibros; i++) {
                     String isbn = dis.readUTF();
                     String titulo = dis.readUTF();
                     String autor = dis.readUTF();
@@ -185,6 +185,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
             } catch (IOException e) {
                 return 0; //si el fichero no se ha abierto correctamente
             }
+
         }
     }
 
@@ -424,14 +425,14 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     0: Se ha puesto el usuario en la lista de espera. */
     @Override
     public int Prestar(int pPos) throws RemoteException {
-        if(pPos < 1 || pPos > Libros.size()){
+        if (pPos < 1 || pPos > Libros.size()) {
             return -1;
-        } else if(Libros.get(pPos).getNoLibros() <= 0){
-            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera()+1);
+        } else if (Libros.get(pPos).getNoLibros() <= 0) {
+            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() + 1);
             return 0;
         } else {
-            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros()-1);
-            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados()-1);
+            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() - 1);
+            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() - 1);
             return 1;
         }
     }
