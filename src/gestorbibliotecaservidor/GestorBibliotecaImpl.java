@@ -122,7 +122,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return null;
         } else {
-            if (pPosRepo < 1 || pPosRepo >= repositorios.size()) { //asumo que el dato que se pasa va desde 1 hasta n
+            if (pPosRepo < 1 || pPosRepo > nRepo) { //asumo que el dato que se pasa va desde 1 hasta n
                 return null;
             } else {
                 return repositorios.get(pPosRepo - 1).getDatos(); //por eso le pongo el -1
