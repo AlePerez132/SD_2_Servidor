@@ -305,8 +305,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         } else {
             int i = 0;
             boolean encontrado = false;
-            while (!encontrado || i < Libros.size()) {
-                if (Libros.get(pNoLibros).getIsbn().equals(pIsbn)) {
+            while (!encontrado && i < Libros.size()) {
+                if (Libros.get(i).getIsbn().equals(pIsbn)) {
                     encontrado = true;
                 } else {
                     i++;
@@ -342,8 +342,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         } else {
             int i = 0;
             boolean encontrado = false;
-            while (!encontrado || i < Libros.size()) {
-                if (Libros.get(pNoLibros).getIsbn().equals(pIsbn)) {
+            while (!encontrado && i < Libros.size()) {
+                if (Libros.get(i).getIsbn().equals(pIsbn)) {
                     encontrado = true;
                 } else {
                     i++;
