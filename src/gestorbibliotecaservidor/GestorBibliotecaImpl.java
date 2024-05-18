@@ -266,6 +266,8 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     1: Se ha añadido el nuevo libro al repositorio indicado por pRepo. */
     @Override
     public int NuevoLibro(int pIda, TLibro L, int pRepo) throws RemoteException {
+        System.out.println("Isbn del libro " + L.getIsbn());
+        System.out.println("Autor del libro " + L.getAutor());
         if (pIda != idAdmin) {
             return -1;
         } else if (pRepo < 1 || pRepo > repositorios.size()) {
