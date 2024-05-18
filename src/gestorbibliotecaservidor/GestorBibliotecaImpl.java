@@ -469,19 +469,12 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     public int Prestar(int pPos) throws RemoteException {
         if (pPos < 1 || pPos > Libros.size()) {
             return -1;
-        } else if (Libros.get(pPos).getNoLibros() <= 0) { //si no hay libros disponibles
-            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() + 1); //Libros.get(i).NoListaEspera++
+        } else if (Libros.get(pPos-1).getNoLibros() <= 0) { //si no hay libros disponibles
+            Libros.get(pPos-1).setNoListaEspera(Libros.get(pPos-1).getNoListaEspera() + 1); //Libros.get(i).NoListaEspera++
             return 0;
         } else {
-            System.out.println("pPos = " + pPos);
-            System.out.println("Titulo del libro[pPos-1] = " + Libros.get(pPos-1).getTitulo());
-            System.out.println("Isbn del libro[pPos-1] = " + Libros.get(pPos-1).getIsbn());
-            System.out.println("Titulo del libro[pPos] = " + Libros.get(pPos).getTitulo());
-            System.out.println("Isbn del libro[pPos] = " + Libros.get(pPos).getIsbn());
-            System.out.println("Titulo del libro[pPos+1] = " + Libros.get(pPos+1).getTitulo());
-            System.out.println("Isbn del libro[pPos+1] = " + Libros.get(pPos+1).getIsbn());
-            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() - 1);  //Libros.get(i).NoListaEspera--
-            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() + 1); //Libros.get(i).NoPrestados++
+            Libros.get(pPos-1).setNoLibros(Libros.get(pPos-1).getNoLibros() - 1);  //Libros.get(i).NoListaEspera--
+            Libros.get(pPos-1).setNoPrestados(Libros.get(pPos-1).getNoPrestados() + 1); //Libros.get(i).NoPrestados++
             Ordenar(idAdmin, campoOrdenacion);
             return 1;
         }
@@ -502,13 +495,13 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     public int Devolver(int pPos) throws RemoteException {
         if (pPos < 1 || pPos > Libros.size()) {
             return -1;
-        } else if (Libros.get(pPos).getNoListaEspera() > 0) { //si hay libros disponibles
-            Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() - 1); //Libros.get(i).NoLibros++
+        } else if (Libros.get(pPos-1).getNoListaEspera() > 0) { //si hay libros disponibles
+            Libros.get(pPos-1).setNoListaEspera(Libros.get(pPos-1).getNoListaEspera() - 1); //Libros.get(i).NoLibros++
             Ordenar(idAdmin, campoOrdenacion);
             return 0;
-        } else if (Libros.get(pPos).getNoPrestados() > 0) {
-            Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() + 1);  //Libros.get(i).NoListaEspera+
-            Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() - 1); //Libros.get(i).NoPrestados--
+        } else if (Libros.get(pPos-1).getNoPrestados() > 0) {
+            Libros.get(pPos-1).setNoLibros(Libros.get(pPos-1).getNoLibros() + 1);  //Libros.get(i).NoListaEspera+
+            Libros.get(pPos-1).setNoPrestados(Libros.get(pPos-1).getNoPrestados() - 1); //Libros.get(i).NoPrestados--
             Ordenar(idAdmin, campoOrdenacion);
             return 1;
         } else {
