@@ -473,6 +473,13 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
             Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() + 1); //Libros.get(i).NoListaEspera++
             return 0;
         } else {
+            System.out.println("pPos = " + pPos);
+            System.out.println("Titulo del libro[pPos-1] = " + Libros.get(pPos-1).getTitulo());
+            System.out.println("Isbn del libro[pPos-1] = " + Libros.get(pPos-1).getIsbn());
+            System.out.println("Titulo del libro[pPos] = " + Libros.get(pPos).getTitulo());
+            System.out.println("Isbn del libro[pPos] = " + Libros.get(pPos).getIsbn());
+            System.out.println("Titulo del libro[pPos+1] = " + Libros.get(pPos+1).getTitulo());
+            System.out.println("Isbn del libro[pPos+1] = " + Libros.get(pPos+1).getIsbn());
             Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() - 1);  //Libros.get(i).NoListaEspera--
             Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() + 1); //Libros.get(i).NoPrestados++
             Ordenar(idAdmin, campoOrdenacion);
