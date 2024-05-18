@@ -142,15 +142,15 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         if (pIda != idAdmin) {
             return -1;
         } else {
-            try ( DataInputStream dis = new DataInputStream(new FileInputStream(pNomFichero))) {
+            try ( DataInputStream dis = new DataInputStream(new FileInputStream(pNomFichero))) { //abrir el fichero
                 nombreFichero = pNomFichero;
                 int numLibros = dis.readInt();
                 String nombreRepositorio = dis.readUTF();
-                String direccionRepositorio = dis.readUTF();
+                String direccionRepositorio = dis.readUTF(); //leemos datos del repositorio
 
                 int j = 0;
                 while (j < repositorios.size()) {
-                    if (repositorios.get(j).getDatos().getNombre().equals(nombreRepositorio)) {
+                    if (repositorios.get(j).getDatos().getNombre().equals(nombreRepositorio)) { //busco que no haya un repositorio con el mismo nombre
                         return -2;
                     } else {
                         j++;

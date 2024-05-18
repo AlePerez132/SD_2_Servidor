@@ -1,0 +1,36 @@
+case 5: {//Retirar libro.
+                                        System.out.print("Introduce Isbn a Buscar:\n");
+                                        isbnCompra = scString.nextLine();
+                                        // Por ISBN.
+                                        result_10 = GestorStub.Buscar(idAdministrador, isbnCompra);
+                                        if (result_10 == -2) {
+                                            System.out.print("ERROR: ya hay un administrador logueado");
+                                        } else if (result_10 == -1) {
+                                            System.out.println("No se ha encontrado ningun libro");
+                                        } else { //mostrar libro
+                                            result_11 = GestorStub.Descargar(idAdministrador, -1, result_10 + 1);
+                                            if (result_11 != null) {
+                                                // Hemos recibido el resultado bien, podemos guardarlo en libro y escribir por pantalla.
+                                                libro = result_11;
+                                                System.out.print((result_10 + 1) + "\t" + libro.getTitulo() + "\t" + libro.getIsbn() + "\t" + libro.getNoLibros() + "\t" + libro.getNoListaEspera() + "\n");
+                                                System.out.print(libro.getAutor() + "\t" + libro.getPais() + "\t" + libro.getIdioma() + "\t" + libro.getAnio() + "\n");
+                                            }
+                                        }
+                                        System.out.println("Es este el libro que quieres retirar(s/n)?");
+                                        confirmacionCompra = scChar.next().charAt(0);
+                                        if (confirmacionCompra == 's') {
+                                            System.out.println("Introduce el numero de unidades a retirar:");
+                                            numeroLibrosRetirados = scInt.nextInt();
+                                            result_7 = GestorStub.Retirar(idAdministrador, isbnCompra, numeroLibrosRetirados);
+                                            if (result_7 == -1) {
+                                                System.out.print("ERROR: ya hay un administrador logueado");
+                                            } else if (result_7 == 0) {
+                                                System.out.print("ERROR: no se ha encontrado ningun libro");
+                                            } else if (result_7 == 2) {
+                                                System.out.println("No hay suficientes ejemplares para retirar");
+                                            } else if (result_7 == 1) {
+                                                System.out.println("Se han reducido el número de ejemplares disponibles y se han ordenado los datos");
+                                            }
+                                        }
+                                        break;
+                                    }                }
