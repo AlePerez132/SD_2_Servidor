@@ -350,7 +350,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
             if (!encontrado) {
                 return 0;
             } else {
-                if(pNoLibros > Libros.get(i).getNoLibros()){
+                if (pNoLibros > Libros.get(i).getNoLibros()) {
                     return -2;
                 } else {
                     Libros.get(i).setNoLibros(Libros.get(i).getNoLibros() - pNoLibros); //Libros.get(i).NoLibros-=pNoLibros
@@ -436,7 +436,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
     ¡null: La referencia a un objeto TLibro. */
     @Override
     public TLibro Descargar(int pIda, int pRepo, int pPos) throws RemoteException {
-        if (pRepo < -1) {
+        if (pRepo == -1) {
             if (pPos < 1 || pPos > Libros.size()) {
                 return null;
             } else {
@@ -478,8 +478,6 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
         }
     }
 
-    
-    
     /*Devuelve un ejemplar del libro cuya posición es indicada por parámetro. Este método accede a los libros
     como si solo hubiera una “mezcla ordenada” de todos los repositorios. Una vez localizado el libro, si hay
     usuarios en espera se reducirá en una unidad y Si no hay usuarios en espera pero si libros prestados, se
@@ -499,7 +497,7 @@ public class GestorBibliotecaImpl implements GestorBibliotecaIntf {
             Libros.get(pPos).setNoListaEspera(Libros.get(pPos).getNoListaEspera() - 1); //Libros.get(i).NoLibros++
             Ordenar(idAdmin, campoOrdenacion);
             return 0;
-        } else if(Libros.get(pPos).getNoPrestados() > 0){
+        } else if (Libros.get(pPos).getNoPrestados() > 0) {
             Libros.get(pPos).setNoLibros(Libros.get(pPos).getNoLibros() + 1);  //Libros.get(i).NoListaEspera+
             Libros.get(pPos).setNoPrestados(Libros.get(pPos).getNoPrestados() - 1); //Libros.get(i).NoPrestados--
             Ordenar(idAdmin, campoOrdenacion);
